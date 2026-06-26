@@ -1,0 +1,242 @@
+## Step-by-step codes
+
+### 1. DTR clock test
+**Purpose:** Verify that the FT232R DTR line can generate visible clock transitions on SCL.
+
+```python
+import serial
+import time
+
+ser = serial.Serial("COM9")
+
+while True:
+    ser.setDTR(True)    # SCL low
+    time.sleep(0.5)
+    ser.setDTR(False)   # SCL high
+    time.sleep(0.5)
+```
+
+### 2. TX 0x55 pulsing test
+
+**Purpose:** Verify that the TX line is pulsing cleanly by sending `0x55` (`01010101`).
+
+```python
+import serial
+import time
+
+ser = serial.Serial("COM9", 9600)
+
+while True:
+    ser.write(b"\x55")
+    time.sleep(1)
+```
+
+### 3. Break-condition SDA low test
+
+**Purpose:** Verify that the SDA line can be pulled low and released high using the UART break condition.
+
+```python
+import serial
+import time
+
+ser = serial.Serial("COM9")
+
+while True:
+    ser.break_condition = True
+    print("LOW")
+    time.sleep(1)
+
+    ser.break_condition = False
+    print("HIGH")
+    time.sleep(1)
+```
+
+### 4. START condition generation
+
+**Purpose:** Generate and verify an I2C START condition.
+
+```python
+import serial
+import time
+
+ser = serial.Serial("COM9")
+
+print("Idle")
+ser.setDTR(False)            # SCL high
+ser.break_condition = False  # SDA high
+time.sleep(5)
+
+print("START")
+ser.break_condition = True   # SDA goes low while SCL is high
+time.sleep(5)
+
+print("Done")
+input("Press Enter...")
+```
+
+### 5. Byte write test
+
+**Purpose:** Perform a single EEPROM write transaction to address `0x0000` with data `0x48` (`'H'`).
+
+```python
+import serial
+import time
+
+ser = serial.Serial("COM9")
+
+def scl_high():
+    ser.setDTR(False)
+
+def scl_low():
+    ser.setDTR(True)
+
+def sda_high():
+    ser.break_condition = False
+
+def sda_low():
+    ser.break_condition = True
+
+DELAY = 0.02
+
+def i2c_start():
+    sda_high()
+    scl_high()
+    time.sleep(DELAY)
+    sda_low()
+    time.sleep(DELAY)
+    scl_low()
+    time.sleep(DELAY)
+
+def i2c_stop():
+    sda_low()
+    scl_high()
+    time.sleep(DELAY)
+    sda_high()
+    time.sleep(DELAY)
+
+def send_bit(bit):
+    if bit:
+        sda_high()
+    else:
+        sda_low()
+    time.sleep(DELAY)
+    scl_high()
+    time.sleep(DELAY)
+    scl_low()
+    time.sleep(DELAY)
+
+def send_byte(val):
+    for i in range(7, -1, -1):
+        send_bit((val >> i) & 1)
+
+DEVICE_WRITE = 0xA0
+
+i2c_start()
+send_byte(DEVICE_WRITE)
+send_byte(0x00)
+send_byte(0x00)
+send_byte(ord("H"))
+i2c_stop()
+
+print("Done")
+input("Press Enter...")
+```
+
+### 6. EEPROM read-back
+**Purpose:** Perform EEPROM write followed by read-back verification.
+
+```python
+import serial
+import time
+
+ser = serial.Serial("COM9")
+
+def scl_high():
+    ser.setDTR(False)
+
+def scl_low():
+    ser.setDTR(True)
+
+def sda_high():
+    ser.break_condition = False
+
+def sda_low():
+    ser.break_condition = True
+
+DELAY = 0.02
+
+def i2c_start():
+    sda_high()
+    scl_high()
+    time.sleep(DELAY)
+    sda_low()
+    time.sleep(DELAY)
+    scl_low()
+    time.sleep(DELAY)
+
+def i2c_stop():
+    sda_low()
+    scl_high()
+    time.sleep(DELAY)
+    sda_high()
+    time.sleep(DELAY)
+
+def send_bit(bit):
+    if bit:
+        sda_high()
+    else:
+        sda_low()
+    time.sleep(DELAY)
+    scl_high()
+    time.sleep(DELAY)
+    scl_low()
+    time.sleep(DELAY)
+
+def send_byte(val):
+    for i in range(7, -1, -1):
+        send_bit((val >> i) & 1)
+
+    sda_high()
+    time.sleep(DELAY)
+    scl_high()
+    time.sleep(DELAY)
+    scl_low()
+    time.sleep(DELAY)
+
+i2c_start()
+send_byte(0xA0)
+send_byte(0x00)
+send_byte(0x00)
+send_byte(0x48)
+i2c_stop()
+
+print("Write complete. Waiting for EEPROM write cycle...")
+time.sleep(0.05)
+
+print("Read-back sequence...")
+i2c_start()
+send_byte(0xA0)
+send_byte(0x00)
+send_byte(0x00)
+
+i2c_start()
+send_byte(0xA1)
+
+for _ in range(8):
+    time.sleep(DELAY)
+    scl_high()
+    time.sleep(DELAY)
+    scl_low()
+    time.sleep(DELAY)
+
+sda_high()
+time.sleep(DELAY)
+scl_high()
+time.sleep(DELAY)
+scl_low()
+time.sleep(DELAY)
+
+i2c_stop()
+
+print("Done. Check PulseView for the read block.")
+```
