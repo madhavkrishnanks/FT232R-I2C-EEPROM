@@ -1,7 +1,7 @@
 # FT232R-I2C-EEPROM
 
 # OBJECTIVE 
-Read and write data to an AT24C256 EEPROM using FT232R using a Logic Analyzer.
+Read and write data to an AT24C256 EEPROM using FT232R and capture waveforms with Logic Analyzer.
 
 ## Scope
 This repository documents the read and write operations performed on an AT24C256 EEPROM using an FT232R interface, Python, a Logic Analyzer, and PulseView .
