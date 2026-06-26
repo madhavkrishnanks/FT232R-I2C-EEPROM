@@ -50,5 +50,5 @@ During bring-up, the following issues were encountered and resolved:
 - Verification of EEPROM write and read transaction flow.
 ## Conclusion
 
-![Final read write waveform image ](Images/Read Write test image.png)
+![Final read write waveform image ](Images/Read_Write_test_image.png)
 An EEPROM write and read-back transaction was successfully implemented using FT232R control lines and Python. The generated I2C bus activity was captured and verified using a Logic Analyzer and PulseView, confirming that the value written to the EEPROM was successfully read back.
